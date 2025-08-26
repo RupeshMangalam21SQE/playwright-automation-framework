@@ -1,0 +1,202 @@
+name: Playwright Tests
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master ]
+  schedule:
+    # Run tests daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      browser:
+        description: 'Browser to run tests on'
+        required: true
+        default: 'chromium'
+        type: choice
+        options:
+        - chromium
+        - firefox  
+        - webkit
+        - all
+      test_type:
+        description: 'Type of tests to run'
+        required: true
+        default: 'smoke'
+        type: choice
+        options:
+        - smoke
+        - regression
+        - all
+
+env:
+  HEADLESS: true
+  BROWSER: chromium
+  BASE_URL: https://www.saucedemo.com/
+  DEFAULT_TIMEOUT: 30000
+  PARALLEL_WORKERS: 4
+
+jobs:
+  # Code Quality Checks
+  code-quality:
+    name: Code Quality & Security
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 black isort
+
+      - name: Run Black (code formatting)
+        run: black --check --diff .
+
+      - name: Run isort (import sorting)
+        run: isort --check-only --diff .
+
+      - name: Run flake8 (linting)
+        run: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+
+  # Matrix strategy for multiple browser testing
+  playwright-tests:
+    name: Playwright Tests
+    needs: code-quality
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+        python-version: ['3.9', '3.11']
+        exclude:
+          - browser: webkit
+            python-version: '3.9'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Cache Python dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Install Playwright browsers
+        run: |
+          playwright install --with-deps ${{ matrix.browser }}
+
+      - name: Create directories
+        run: |
+          mkdir -p reports screenshots test-results
+
+      - name: Run smoke tests
+        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.test_type == 'smoke')
+        run: |
+          pytest tests/ \
+            -m smoke \
+            --browser=${{ matrix.browser }} \
+            --headed=false \
+            --video=on \
+            --screenshot=on \
+            --html=reports/smoke-report-${{ matrix.browser }}.html \
+            --self-contained-html \
+            --junitxml=reports/junit-smoke-${{ matrix.browser }}.xml \
+            -n ${{ env.PARALLEL_WORKERS }} \
+            --tb=short
+        env:
+          BROWSER: ${{ matrix.browser }}
+          HEADLESS: true
+          CI: true
+
+      - name: Run regression tests
+        if: github.event_name == 'pull_request' || github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && github.event.inputs.test_type == 'regression')
+        run: |
+          pytest tests/ \
+            -m regression \
+            --browser=${{ matrix.browser }} \
+            --headed=false \
+            --video=on \
+            --screenshot=on \
+            --html=reports/regression-report-${{ matrix.browser }}.html \
+            --self-contained-html \
+            --junitxml=reports/junit-regression-${{ matrix.browser }}.xml \
+            -n ${{ env.PARALLEL_WORKERS }} \
+            --tb=short
+        env:
+          BROWSER: ${{ matrix.browser }}
+          HEADLESS: true
+          CI: true
+
+      - name: Upload test artifacts
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: playwright-report-${{ matrix.browser }}-${{ matrix.python-version }}
+          path: |
+            reports/
+            screenshots/
+            test-results/
+          retention-days: 30
+
+  # BDD Tests (separate job)
+  bdd-tests:
+    name: BDD Tests
+    needs: code-quality
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' || github.event_name == 'schedule'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Install Playwright browsers
+        run: playwright install --with-deps chromium
+
+      - name: Run BDD tests
+        run: |
+          pytest step_definitions/ \
+            --gherkin-terminal-reporter \
+            --browser=chromium \
+            --headed=false \
+            --html=reports/bdd-report.html \
+            --self-contained-html
+        env:
+          BROWSER: chromium
+          HEADLESS: true
+          CI: true
+
+      - name: Upload BDD reports
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: bdd-test-reports
+          path: reports/
+          retention-days: 30
