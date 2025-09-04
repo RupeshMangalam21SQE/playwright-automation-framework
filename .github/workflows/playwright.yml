@@ -41,7 +41,7 @@ jobs:
   # Code Quality Checks
   code-quality:
     name: Code Quality & Security
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -69,7 +69,7 @@ jobs:
   playwright-tests:
     name: Playwright Tests
     needs: code-quality
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
@@ -113,7 +113,6 @@ jobs:
           pytest tests/ \
             -m smoke \
             --browser=${{ matrix.browser }} \
-            --headed=false \
             --video=on \
             --screenshot=on \
             --html=reports/smoke-report-${{ matrix.browser }}.html \
@@ -132,7 +131,6 @@ jobs:
           pytest tests/ \
             -m regression \
             --browser=${{ matrix.browser }} \
-            --headed=false \
             --video=on \
             --screenshot=on \
             --html=reports/regression-report-${{ matrix.browser }}.html \
@@ -146,7 +144,7 @@ jobs:
           CI: true
 
       - name: Upload test artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         if: always()
         with:
           name: playwright-report-${{ matrix.browser }}-${{ matrix.python-version }}
@@ -160,7 +158,7 @@ jobs:
   bdd-tests:
     name: BDD Tests
     needs: code-quality
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     if: github.event_name == 'pull_request' || github.event_name == 'schedule'
 
     steps:
@@ -185,7 +183,6 @@ jobs:
           pytest step_definitions/ \
             --gherkin-terminal-reporter \
             --browser=chromium \
-            --headed=false \
             --html=reports/bdd-report.html \
             --self-contained-html
         env:
@@ -194,7 +191,7 @@ jobs:
           CI: true
 
       - name: Upload BDD reports
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         if: always()
         with:
           name: bdd-test-reports
