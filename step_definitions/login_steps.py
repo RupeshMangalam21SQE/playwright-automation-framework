@@ -3,14 +3,14 @@ Step definitions for login feature using pytest-bdd
 """
 
 import pytest
-from pytest_bdd import scenarios, given, when, then, parsers
 from playwright.sync_api import Page
-from pages.login_page import LoginPage
-from pages.home_page import HomePage
+from pytest_bdd import given, parsers, scenarios, then, when
 
+from pages.home_page import HomePage
+from pages.login_page import LoginPage
 
 # Load scenarios from the feature file
-scenarios('../features/login.feature')
+scenarios("../features/login.feature")
 
 
 @pytest.fixture
@@ -31,58 +31,60 @@ def context_data():
     return {}
 
 
-@given('I am on the login page')
+@given("I am on the login page")
 def navigate_to_login_page(login_page: LoginPage):
     """Navigate to the login page"""
     login_page.navigate_to_login()
     login_page.verify_login_page_loaded()
 
 
-@when('I enter valid credentials')
+@when("I enter valid credentials")
 def enter_valid_credentials(login_page: LoginPage):
     """Enter valid login credentials"""
     login_page.login_with_standard_user()
 
 
-@when('I enter an invalid username and valid password')
+@when("I enter an invalid username and valid password")
 def enter_invalid_username(login_page: LoginPage):
     """Enter invalid username with valid password"""
     login_page.login("invalid_user", "secret_sauce")
 
 
-@when('I enter a valid username and invalid password')
+@when("I enter a valid username and invalid password")
 def enter_invalid_password(login_page: LoginPage):
     """Enter valid username with invalid password"""
     login_page.login("standard_user", "invalid_password")
 
 
-@when('I enter locked out user credentials')
+@when("I enter locked out user credentials")
 def enter_locked_out_credentials(login_page: LoginPage):
     """Enter locked out user credentials"""
     login_page.login_with_locked_user()
 
 
-@when('I click the login button without entering credentials')
+@when("I click the login button without entering credentials")
 def click_login_without_credentials(login_page: LoginPage):
     """Click login button with empty credentials"""
     login_page.click_login_button()
 
 
 @when(parsers.parse('I login with "{username}" and "{password}"'))
-def login_with_credentials(login_page: LoginPage, username: str, password: str, context_data: dict):
+def login_with_credentials(
+    login_page: LoginPage, username: str, password: str, context_data: dict
+):
     """Login with specified credentials and store context"""
-    context_data['username'] = username
-    context_data['password'] = password
+    context_data["username"] = username
+    context_data["password"] = password
     login_page.login(username, password)
 
 
-@then('I should be redirected to the home page')
+@then("I should be redirected to the home page")
 def verify_redirect_to_home_page(login_page: LoginPage):
     """Verify successful redirect to home page"""
     login_page.verify_successful_login()
 
 
-@then('I should see the product inventory')
+@then("I should see the product inventory")
 def verify_product_inventory(home_page: HomePage):
     """Verify product inventory is visible"""
     home_page.verify_home_page_loaded()
@@ -95,19 +97,23 @@ def verify_error_message(login_page: LoginPage, error_message: str):
     login_page.verify_login_error(error_message)
 
 
-@then('I should remain on the login page')
+@then("I should remain on the login page")
 def verify_remain_on_login_page(login_page: LoginPage):
     """Verify user remains on login page"""
     current_url = login_page.get_current_url()
     expected_url = login_page.get_page_url()
-    assert expected_url in current_url, f"Expected to remain on login page, but current URL is {current_url}"
+    assert (
+        expected_url in current_url
+    ), f"Expected to remain on login page, but current URL is {current_url}"
 
 
 @then(parsers.parse('the login result should be "{result}"'))
-def verify_login_result(login_page: LoginPage, home_page: HomePage, result: str, context_data: dict):
+def verify_login_result(
+    login_page: LoginPage, home_page: HomePage, result: str, context_data: dict
+):
     """Verify the login result based on expected outcome"""
-    username = context_data.get('username', '')
-    
+    username = context_data.get("username", "")
+
     if result == "success":
         login_page.verify_successful_login()
         home_page.verify_home_page_loaded()

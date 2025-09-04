@@ -2,59 +2,92 @@
 Helper utilities for the Playwright automation framework
 """
 
-import json
 import csv
-import os
+import json
 import logging
-from typing import Dict, List, Any, Optional
+import os
 from datetime import datetime
-from playwright.sync_api import Page
-from faker import Faker
-import pandas as pd
-from utils.config import Config
-import requests
+from typing import Any, Dict, List, Optional
 
+import pandas as pd
+import requests
+from faker import Faker
+from playwright.sync_api import Page
+
+from utils.config import Config
 
 
 class TestDataManager:
     """Manages test data from various sources"""
-    
+
     def __init__(self):
         self.faker = Faker()
         self.data_dir = Config.TEST_DATA_DIR
         os.makedirs(self.data_dir, exist_ok=True)
-    
+
     def get_login_test_cases(self) -> List[Dict[str, str]]:
         """Get login test cases from CSV or generate default ones"""
         csv_file = os.path.join(self.data_dir, "login_test_data.csv")
-        
+
         if os.path.exists(csv_file):
             return self._read_csv_data(csv_file)
         else:
             return self._get_default_login_data()
-    
+
     def _read_csv_data(self, file_path: str) -> List[Dict[str, str]]:
         """Read test data from CSV file"""
         try:
             df = pd.read_csv(file_path)
-            return df.to_dict('records')
+            return df.to_dict("records")
         except Exception as e:
             logging.error(f"Error reading CSV file {file_path}: {e}")
             return self._get_default_login_data()
-    
+
     def _get_default_login_data(self) -> List[Dict[str, str]]:
         """Get default login test data"""
         return [
-            {"username": "standard_user", "password": "secret_sauce", "expected_result": "success"},
-            {"username": "locked_out_user", "password": "secret_sauce", "expected_result": "locked_out"},
-            {"username": "problem_user", "password": "secret_sauce", "expected_result": "success"},
-            {"username": "performance_glitch_user", "password": "secret_sauce", "expected_result": "success"},
-            {"username": "invalid_user", "password": "secret_sauce", "expected_result": "invalid_credentials"},
-            {"username": "standard_user", "password": "wrong_password", "expected_result": "invalid_credentials"},
-            {"username": "", "password": "secret_sauce", "expected_result": "username_required"},
-            {"username": "standard_user", "password": "", "expected_result": "password_required"},
+            {
+                "username": "standard_user",
+                "password": "secret_sauce",
+                "expected_result": "success",
+            },
+            {
+                "username": "locked_out_user",
+                "password": "secret_sauce",
+                "expected_result": "locked_out",
+            },
+            {
+                "username": "problem_user",
+                "password": "secret_sauce",
+                "expected_result": "success",
+            },
+            {
+                "username": "performance_glitch_user",
+                "password": "secret_sauce",
+                "expected_result": "success",
+            },
+            {
+                "username": "invalid_user",
+                "password": "secret_sauce",
+                "expected_result": "invalid_credentials",
+            },
+            {
+                "username": "standard_user",
+                "password": "wrong_password",
+                "expected_result": "invalid_credentials",
+            },
+            {
+                "username": "",
+                "password": "secret_sauce",
+                "expected_result": "username_required",
+            },
+            {
+                "username": "standard_user",
+                "password": "",
+                "expected_result": "password_required",
+            },
         ]
-    
+
     def generate_fake_user_data(self) -> Dict[str, str]:
         """Generate fake user data for testing"""
         return {
@@ -71,21 +104,21 @@ class TestDataManager:
 
 class ScreenshotHelper:
     """Helper class for taking and managing screenshots"""
-    
+
     def __init__(self, page: Page):
         self.page = page
         self.screenshot_dir = Config.SCREENSHOTS_DIR
         os.makedirs(self.screenshot_dir, exist_ok=True)
-    
+
     def take_screenshot(self, name: str = None, full_page: bool = True) -> str:
         """Take a screenshot with optional name"""
         if not name:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             name = f"screenshot_{timestamp}"
-        
-        if not name.endswith('.png'):
-            name += '.png'
-        
+
+        if not name.endswith(".png"):
+            name += ".png"
+
         screenshot_path = os.path.join(self.screenshot_dir, name)
         self.page.screenshot(path=screenshot_path, full_page=full_page)
         logging.info(f"Screenshot saved: {screenshot_path}")
@@ -99,8 +132,8 @@ class APIHelper:
 
     def _abs_url(self, endpoint):
         # Accept both '/posts' and 'posts'
-        if not endpoint.startswith('/'):
-            endpoint = '/' + endpoint
+        if not endpoint.startswith("/"):
+            endpoint = "/" + endpoint
         return self.base_url + endpoint
 
     def get(self, endpoint, **kwargs):
