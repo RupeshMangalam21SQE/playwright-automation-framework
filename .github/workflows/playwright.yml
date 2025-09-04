@@ -98,8 +98,8 @@ jobs:
             libwoff1 \
             libharfbuzz-icu0 \
             libgstreamer-gl1.0-0 \
-            libgstreamer-plugins-bad1.0-0
-          playwright install --with-deps ${{ matrix.browser }}
+            libgstreamer-plugins-bad1.0-0 || true
+          playwright install ${{ matrix.browser }}
       - name: Run tests
         run: |
           pytest tests/ \
