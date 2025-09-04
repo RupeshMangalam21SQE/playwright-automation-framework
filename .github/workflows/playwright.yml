@@ -144,7 +144,7 @@ jobs:
           CI: true
 
       - name: Upload test artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: playwright-report-${{ matrix.browser }}-${{ matrix.python-version }}
@@ -191,7 +191,7 @@ jobs:
           CI: true
 
       - name: Upload BDD reports
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: bdd-test-reports
