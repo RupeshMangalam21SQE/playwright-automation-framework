@@ -91,8 +91,14 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            libasound2t64 libffi8 libx264-164 libopus0 libwoff1 libharfbuzz-icu0 \
-            libgstreamer-gl1.0-0 libgstreamer-plugins-bad1.0-0
+            libasound2t64 \
+            libffi8 \
+            libx264-164 \
+            libopus0 \
+            libwoff1 \
+            libharfbuzz-icu0 \
+            libgstreamer-gl1.0-0 \
+            libgstreamer-plugins-bad1.0-0
           playwright install --with-deps ${{ matrix.browser }}
       - name: Run tests
         run: |
