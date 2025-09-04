@@ -99,11 +99,19 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # Fix Ubuntu 24.04 libasound2 issue
+      # Fix Ubuntu 24.04 dependency issues
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libasound2t64
+          sudo apt-get install -y \
+            libasound2t64 \
+            libffi8 \
+            libx264-164 \
+            libopus0 \
+            libwoff1 \
+            libharfbuzz-icu0 \
+            libgstreamer-gl1.0-0 \
+            libgstreamer-plugins-bad1.0-0
 
       - name: Install Playwright browsers
         run: playwright install --with-deps ${{ matrix.browser }}
@@ -182,11 +190,19 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # Fix Ubuntu 24.04 libasound2 issue
+      # Fix Ubuntu 24.04 dependency issues
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libasound2t64
+          sudo apt-get install -y \
+            libasound2t64 \
+            libffi8 \
+            libx264-164 \
+            libopus0 \
+            libwoff1 \
+            libharfbuzz-icu0 \
+            libgstreamer-gl1.0-0 \
+            libgstreamer-plugins-bad1.0-0
 
       - name: Install Playwright browsers
         run: playwright install --with-deps chromium
