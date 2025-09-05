@@ -11,8 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        browser: [chromium, firefox, webkit]  # Run tests on all 3 browsers
-      fail-fast: false  # Prevent other browsers from failing when one fails
+        browser: [chromium, firefox, webkit]
+      fail-fast: false
     timeout-minutes: 40
 
     steps:
@@ -28,17 +28,19 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          pip install pytest
 
-      - name: Install Playwright and OS Dependencies
-        run: |
-          pip install playwright
-          playwright install-deps  # Install required OS packages
-          playwright install       # Install browsers
+      - name: Install Playwright Browsers
+        uses: microsoft/playwright@v1.44.0
+        with:
+          install-deps: true
+
+      - name: Create reports directory
+        run: mkdir -p reports
 
       - name: Run E2E Tests
         run: |
-          mkdir -p reports  # Ensure reports directory exists
-          pytest tests/ \
+          python -m pytest tests/ \
             --browser ${{ matrix.browser }} \
             --junitxml=reports/junit-${{ matrix.browser }}.xml \
             --html=reports/html-${{ matrix.browser }}.html \
@@ -49,12 +51,17 @@ jobs:
           HEADLESS: 'True'
           DEBUG: 'False'
 
+      - name: List generated files (for debugging)
+        if: always()
+        run: |
+          ls -la reports/ || echo "No reports directory"
+          find . -name "*.xml" -o -name "*.html" -o -name "*.png" | head -10 || echo "No test files found"
+
       - name: Upload Test Reports
         if: always()
-        uses: actions/upload-artifact@v4  # Updated to v4
+        uses: actions/upload-artifact@v4
         with:
           name: e2e-reports-${{ matrix.browser }}
           path: |
-            reports/*.html
-            reports/*.xml
-            screenshots/*.png
+            reports/
+            screenshots/
