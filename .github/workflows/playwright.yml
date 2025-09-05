@@ -41,7 +41,7 @@ jobs:
   # Code Quality Checks
   code-quality:
     name: Code Quality & Security
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -69,7 +69,7 @@ jobs:
   playwright-tests:
     name: Playwright Tests
     needs: code-quality
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
@@ -131,9 +131,8 @@ jobs:
   bdd-tests:
     name: BDD Tests
     needs: code-quality
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     if: github.event_name == 'pull_request' || github.event_name == 'schedule'
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
