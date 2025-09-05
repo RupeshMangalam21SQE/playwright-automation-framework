@@ -8,10 +8,10 @@ on:
 
 jobs:
   e2e-tests:
-    runs-on: ubuntu-22.04   # Stable runner for Playwright
+    runs-on: ubuntu-latest
     strategy:
       matrix:
-        browser: [chromium, firefox, webkit]
+        browser: [chromium, firefox, webkit]  # Run tests on all 3 browsers
     timeout-minutes: 40
 
     steps:
@@ -23,53 +23,19 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Cache Python packages
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-
-      - name: Install OS dependencies for Playwright
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libnss3 \
-            libatk1.0-0 \
-            libatk-bridge2.0-0 \
-            libcups2 \
-            libxcomposite1 \
-            libxdamage1 \
-            libxrandr2 \
-            libgbm1 \
-            libpango-1.0-0 \
-            libasound2 \
-            libx11-xcb1 \
-            libxshmfence1 \
-            libxfixes3 \
-            libxrender1 \
-            libffi-dev \
-            libjpeg-dev \
-            libpng-dev \
-            libx264-160 \
-            wget \
-            curl \
-            ca-certificates
-
-      - name: Install Python dependencies
+      - name: Install Python Dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Install Playwright and Browsers
+      - name: Install Playwright and OS Dependencies
         run: |
           pip install playwright
-          playwright install --with-deps
+          playwright install-deps  # Install required OS packages
+          playwright install       # Install browsers
 
       - name: Run E2E Tests
         run: |
-          mkdir -p reports screenshots
           pytest tests/ \
             --browser ${{ matrix.browser }} \
             --junitxml=reports/junit-${{ matrix.browser }}.xml \
@@ -83,7 +49,7 @@ jobs:
 
       - name: Upload Test Reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: e2e-reports-${{ matrix.browser }}
           path: |
