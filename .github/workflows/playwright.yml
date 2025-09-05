@@ -8,7 +8,7 @@ on:
 
 jobs:
   e2e-tests:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04   # Stable runner for Playwright
     strategy:
       matrix:
         browser: [chromium, firefox, webkit]
@@ -31,35 +31,45 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-
 
+      - name: Install OS dependencies for Playwright
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libnss3 \
+            libatk1.0-0 \
+            libatk-bridge2.0-0 \
+            libcups2 \
+            libxcomposite1 \
+            libxdamage1 \
+            libxrandr2 \
+            libgbm1 \
+            libpango-1.0-0 \
+            libasound2 \
+            libx11-xcb1 \
+            libxshmfence1 \
+            libxfixes3 \
+            libxrender1 \
+            libffi-dev \
+            libjpeg-dev \
+            libpng-dev \
+            libx264-160 \
+            wget \
+            curl \
+            ca-certificates
+
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install playwright
-          mkdir -p reports screenshots
 
-      - name: Cache Playwright browsers
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ matrix.browser }}
-          restore-keys: |
-            ${{ runner.os }}-playwright-
-
-      - name: Install Playwright Browsers and System Dependencies
+      - name: Install Playwright and Browsers
         run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxkbcommon0 \
-            libxcomposite1 libxdamage1 libxrandr2 libgbm1 libpango-1.0-0 libpangocairo-1.0-0 \
-            libasound2 libwayland-client0 libwayland-cursor0 libwayland-egl1 libxshmfence1 \
-            libgl1 libegl1 libxcb1 libx11-xcb1 libxcb-dri3-0 libxrender1 libxext6 libffi8 \
-            wget curl ca-certificates fonts-liberation libharfbuzz0b libfribidi0 libfreetype6 \
-            libjpeg-turbo8 libpng16-16 libwebp6 ttf-ubuntu-font-family
-          playwright install
+          pip install playwright
+          playwright install --with-deps
 
       - name: Run E2E Tests
         run: |
+          mkdir -p reports screenshots
           pytest tests/ \
             --browser ${{ matrix.browser }} \
             --junitxml=reports/junit-${{ matrix.browser }}.xml \
