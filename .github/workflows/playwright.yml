@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        browser: [chromium, firefox, webkit]  # Run tests on all 3 browsers
+        browser: [chromium, firefox, webkit]
     timeout-minutes: 40
 
     steps:
@@ -23,12 +23,40 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install Dependencies
+      - name: Cache Python packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install playwright
-          playwright install --with-deps
+          mkdir -p reports screenshots
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ matrix.browser }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
+      - name: Install Playwright Browsers and System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxkbcommon0 \
+            libxcomposite1 libxdamage1 libxrandr2 libgbm1 libpango-1.0-0 libpangocairo-1.0-0 \
+            libasound2 libwayland-client0 libwayland-cursor0 libwayland-egl1 libxshmfence1 \
+            libgl1 libegl1 libxcb1 libx11-xcb1 libxcb-dri3-0 libxrender1 libxext6 libffi8 \
+            wget curl ca-certificates fonts-liberation libharfbuzz0b libfribidi0 libfreetype6 \
+            libjpeg-turbo8 libpng16-16 libwebp6 ttf-ubuntu-font-family
+          playwright install
 
       - name: Run E2E Tests
         run: |
@@ -45,7 +73,7 @@ jobs:
 
       - name: Upload Test Reports
         if: always()
-        uses: actions/upload-artifact@v4  # <-- updated from v3
+        uses: actions/upload-artifact@v4
         with:
           name: e2e-reports-${{ matrix.browser }}
           path: |
