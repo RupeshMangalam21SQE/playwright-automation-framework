@@ -1,4 +1,4 @@
-name: Playwright E2E Tests
+name: Playwright E2E Tests with Docker
 
 on:
   push:
@@ -14,7 +14,7 @@ jobs:
         browser: [chromium, firefox, webkit]
       fail-fast: false
     timeout-minutes: 40
-    
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
@@ -30,32 +30,28 @@ jobs:
           pip install -r requirements.txt
           pip install pytest
 
-      - name: Install Playwright
-        run: |
-          pip install playwright
-          playwright install --with-deps  # Installs browsers and system dependencies
-
       - name: Create reports directory
         run: mkdir -p reports
 
-      - name: Run E2E Tests
-        run: |
-          python -m pytest tests/ \
-            --browser ${{ matrix.browser }} \
-            --junitxml=reports/junit-${{ matrix.browser }}.xml \
-            --html=reports/html-${{ matrix.browser }}.html \
-            -v --capture=sys
+      - name: Run E2E Tests with Playwright Docker
+        uses: docker://mcr.microsoft.com/playwright/python:v1.55.0-noble
+        with:
+          args: >
+            sh -c "
+            pip install -r requirements.txt &&
+            pip install pytest &&
+            mkdir -p reports &&
+            python -m pytest tests/ 
+              --browser ${{ matrix.browser }} 
+              --junitxml=reports/junit-${{ matrix.browser }}.xml 
+              --html=reports/html-${{ matrix.browser }}.html 
+              -v --capture=sys
+            "
         env:
           BASE_URL: https://www.saucedemo.com
           BROWSER: ${{ matrix.browser }}
           HEADLESS: 'True'
           DEBUG: 'False'
-
-      - name: List generated files (for debugging)
-        if: always()
-        run: |
-          ls -la reports/ || echo "No reports directory"
-          find . -name "*.xml" -o -name "*.html" -o -name "*.png" | head -10 || echo "No test files found"
 
       - name: Upload Test Reports
         if: always()
